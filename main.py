@@ -22,12 +22,14 @@ async def get(request: Request):
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
+    counter = 0
     while True:
         data = await websocket.receive_json()
         message = data.get("message")
+        counter +=1
         if message:
             messages.append(message)
-            response = {"message": message, "number": len(messages)}
+            response = {"message": message, "number": counter}
             await websocket.send_json(response)
             
 @app.get("/messages")
