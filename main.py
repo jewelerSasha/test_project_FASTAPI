@@ -1,31 +1,35 @@
 from fastapi import FastAPI, WebSocket
-from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-import websockets
-import json
+from fastapi.responses import HTMLResponse
+from fastapi import Request
+from fastapi.templating import Jinja2Templates
 
 app = FastAPI()
+
+# Подключаем папку со статическими файлами для отображения веб-страницы.
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
+# Подключаем папку с шаблонами для отображения веб-страницы.
+templates = Jinja2Templates(directory="templates")
+
+# Список очереди сообщений
+messages = []
 
 @app.get("/")
-async def get():
-    with open("static/index.html", "r") as file:
-        return HTMLResponse(content=file.read(), status_code=200)
+async def get(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
-    
-    message_counter = 1
-    
     while True:
-        # Получение сообщения от клиента
-        message = await websocket.receive_text()
-        
-        # Обработка полученного текста
-        processed_message = f"{message_counter}: {message}"
-        message_counter += 1
-        
-        # Отправка обработанного сообщения клиенту
-        await websocket.send_text(json.dumps({"text": processed_message}))
+        data = await websocket.receive_json()
+        message = data.get("message")
+        if message:
+            messages.append(message)
+            response = {"message": message, "number": len(messages)}
+            await websocket.send_json(response)
+            
+@app.get("/messages")
+async def get_messages():
+    return {"messages": messages}

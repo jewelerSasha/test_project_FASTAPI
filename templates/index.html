@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebSocket Chat</title>
+    <script type="text/javascript">
+        let ws = new WebSocket("ws://localhost:8000/ws");
+
+        ws.onopen = function(event) {
+            console.log("Connected to WebSocket server");
+        };
+
+        ws.onmessage = function(event) {
+            let response = JSON.parse(event.data);
+            let message = response.message;
+            let number = response.number;
+            let listItem = document.createElement("li");
+            listItem.appendChild(document.createTextNode(number + ". " + message));
+            document.getElementById("message-list").appendChild(listItem);
+        };
+
+        function sendMessage() {
+            let input = document.getElementById("message-input");
+            let message = input.value;
+            input.value = "";
+            ws.send(JSON.stringify({"message": message}));
+        }
+    </script>
+</head>
+<body>
+    <h1>WebSocket Chat</h1>
+    <ul id="message-list">
+        {% for message in messages %}
+        <li>{{ loop.index }}. {{ message }}</li>
+        {% endfor %}
+    </ul>
+    <input type="text" id="message-input">
+    <button type="button" onclick="sendMessage()">Send</button>
+</body>
+</html>
